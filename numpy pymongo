@@ -1,0 +1,161 @@
+import sys
+import numpy as np
+import random
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton
+from pymongo import MongoClient
+
+# Initialize lists using numpy
+LNames = np.array(['Abashidze', 'Gigauri', 'Archvadze', 'Akhalaya', 'Badzaghua', 'Berianidze', 'Berishvili', 'Gventsadze', 'Dalakishvili',
+'Antidze', 'Gyorgadze', 'Gogaladze', 'Gotsiridze', 'Vardidze', 'Zarandia', 'Tadumadze', 'Labadze', 'Kvaratskhelia',
+'Kusradze', 'Kveselava', 'Kapanadze', 'Kasradze', 'Kvinikadze', 'Kopadze', 'Kankia', 'Kordzaia', 'Mikava', 'Melia',
+'Monyava', 'Niauri', 'Latsabidze', 'Mikadze', 'Nemsitsveridze', 'Maisuradze', 'Matsaberidze', 'Tsavania', 'Machaladze',
+'Odisharia', 'Metreveli', 'Nefaridze', 'Modebadze', 'Marjanidze', 'Mumladze', 'Nasrashvili', 'Djanjghava', 'Mosia',
+'Nozadze', 'Nutsubidze', 'Oniani', 'Okruashvili', 'Pertia', 'Razmadze', 'Revazashvili', 'Saganelidze', 'Jakhaia',
+'Salukvadze', 'Samsonashvili', 'Samkharadze', 'Saralidze', 'Sartania', 'Sarishvili', 'Simonishvili', 'Skhiladze',
+'Khurtsidze', 'Sikharulidze', 'Tabatadze', 'Fatsatsia', 'Filauri', 'Fukhashvili', 'Kobalia', 'Kipshidze', 'Shainidze',
+'Fifia', 'Shengelia', 'Sherozia', 'Shvelidze', 'Chkheidze', 'Chaduneli', 'Chikvashvili', 'Tskitishvili', 'Chokoraya',
+'Tsaguria', 'Tsertsvadze', 'Tsukhishvili', 'Dzindzibadze', 'Tsereteli', 'Tsiklauri', 'Chavchanidze', 'Chiradze', 'Chelidze',
+'Chanturia', 'Siradze', 'Shonia', 'Khanjaladze', 'Kharazishvili', 'Kheladze', 'Khvingia', 'Khutishvili', 'Janelidze',
+'Jokhadze'])
+
+FNames = np.array(['Anna', 'Anuki', 'Barbare', 'Gvantsa', 'Diana', 'Eka', 'Elene', 'Veronika', 'Viktoria', 'Tatia', 'Lamzira',
+'Tea', 'Tekle', 'Tiniko', 'Tamari', 'Isabella', 'Ia', 'Yamze', 'Lia', 'Lika', 'Lana', 'Marika', 'Manana',
+'Maya', 'Maka', 'Mariam', 'Nana', 'Nani', 'Nata', 'Nato', 'Nino', 'Nona', 'Oliko', 'Ketevani', 'Salome',
+'Sofiko', 'Nia', 'Christine', 'Shorena', 'Khatia', 'Aleko', 'Alika', 'Amiran', 'Andria', 'Archil', 'Aslan',
+'Bachuk', 'Beka', 'Giga', 'Gyorgi', 'David',
+'Gigi', 'Goga', 'Data', 'Erekle', 'Temur', 'Yakob', 'Ilia', 'Irakli', 'Lado', 'Lasha', 'Mikhail',
+'Nika', 'Otari', 'Paata', 'Ramaz', 'Ramini', 'Rati', 'Rauli', 'Revazi', 'Roma', 'Romani', 'Sandro',
+'Saba', 'Sergi', 'Simon', 'Shalva', 'Shota', 'Tsotne', 'Jaba'])
+
+Subject = np.array(['Basics of Programming', 'Calculus II', 'Introduction to Physics', 'Computer Skills',
+'Introduction to Chemistry', 'Introduction to Biology', 'Algorithms I', 'Introduction to Electronics',
+'Data Structures', 'Algorithms II'])
+
+Points = np.array([str(i) for i in range(101)])
+
+# Function to generate random student records
+def generate_student_records(n=10):
+    ch = random.choice
+    return [' '.join([ch(LNames), ch(FNames), ch(Subject), ch(Points)]) for _ in range(n)]
+
+# MongoDB connection
+client = MongoClient("mongodb://localhost:27017/")
+db = client["school"]
+collection = db["students"]
+
+class StudentSearchApp(QWidget):
+    def __init__(self):
+        super().__init__()
+        
+        # Initialize UI elements
+        self.initUI()
+        
+    def initUI(self):
+        self.setWindowTitle('Student Search')
+        
+        # Layouts
+        vbox = QVBoxLayout()
+        hbox1 = QHBoxLayout()
+        hbox2 = QHBoxLayout()
+        hbox3 = QHBoxLayout()
+        hbox4 = QHBoxLayout()
+        hbox5 = QHBoxLayout()
+        
+        # Labels and textboxes for search input
+        self.name_label = QLabel('Name:')
+        self.name_input = QLineEdit()
+        self.surname_label = QLabel('Surname:')
+        self.surname_input = QLineEdit()
+        self.subject_label = QLabel('Subject:')
+        self.subject_input = QLineEdit()
+        self.point_label = QLabel('Point:')
+        self.point_input = QLineEdit()
+        
+        hbox1.addWidget(self.name_label)
+        hbox1.addWidget(self.name_input)
+        hbox1.addWidget(self.surname_label)
+        hbox1.addWidget(self.surname_input)
+        
+        hbox2.addWidget(self.subject_label)
+        hbox2.addWidget(self.subject_input)
+        hbox2.addWidget(self.point_label)
+        hbox2.addWidget(self.point_input)
+        
+        hbox3.addWidget(QLabel(''))
+        
+        # Buttons
+        self.add_button = QPushButton('Add All Records')
+        self.add_button.clicked.connect(self.add_all_records)
+        
+        self.search_button = QPushButton('Search')
+        self.search_button.clicked.connect(self.search_student)
+        
+        self.update_button = QPushButton('Update')
+        self.update_button.clicked.connect(self.update_student)
+        
+        self.remove_button = QPushButton('Remove')
+        self.remove_button.clicked.connect(self.remove_student)
+        
+        self.close_button = QPushButton('Close')
+        self.close_button.clicked.connect(self.close)
+        
+        hbox4.addWidget(self.add_button)
+        hbox4.addWidget(self.search_button)
+        hbox4.addWidget(self.update_button)
+        hbox4.addWidget(self.remove_button)
+        
+        hbox5.addWidget(self.close_button)
+        
+        # Add layouts to main layout
+        vbox.addLayout(hbox1)
+        vbox.addLayout(hbox2)
+        vbox.addLayout(hbox3)
+        vbox.addLayout(hbox4)
+        vbox.addLayout(hbox5)
+        
+        self.setLayout(vbox)
+    
+    def add_all_records(self):
+        student_records = generate_student_records()
+        for record in student_records:
+            lname, fname, subject, point = record.split()
+            collection.insert_one({"lname": lname, "fname": fname, "subject": subject, "point": point})
+    
+    def search_student(self):
+        lname = self.name_input.text()
+        fname = self.surname_input.text()
+        
+        result = collection.find_one({"lname": lname, "fname": fname})
+        if result:
+            self.name_input.setText(result['lname'])
+            self.surname_input.setText(result['fname'])
+            self.subject_input.setText(result['subject'])
+            self.point_input.setText(result['point'])
+        else:
+            self.name_input.setText('')
+            self.surname_input.setText('')
+            self.subject_input.setText('')
+            self.point_input.setText('')
+    
+    def update_student(self):
+        lname = self.name_input.text()
+        fname = self.surname_input.text()
+        subject = self.subject_input.text()
+        point = self.point_input.text()
+        
+        collection.update_one(
+            {"lname": lname, "fname": fname},
+            {"$set": {"subject": subject, "point": point}}
+        )
+    
+    def remove_student(self):
+        lname = self.name_input.text()
+        fname = self.surname_input.text()
+        
+        collection.delete_one({"lname": lname, "fname": fname})
+    
+# Run the application
+app = QApplication(sys.argv)
+window = StudentSearchApp()
+window.show()
+sys.exit(app.exec_())

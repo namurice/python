@@ -36,7 +36,14 @@ Points = np.array([str(i) for i in range(101)])
 # Function to generate random student records
 def generate_student_records(n=10):
     ch = random.choice
-    return [' '.join([ch(LNames), ch(FNames), ch(Subject), ch(Points)]) for _ in range(n)]
+    records = []
+    for _ in range(n):
+        lname = ch(LNames)
+        fname = ch(FNames)
+        subject = ch(Subject)
+        point = ch(Points)
+        records.append((lname, fname, subject, point))
+    return records
 
 # SQLite connection
 conn = sqlite3.connect('students.db')
@@ -127,7 +134,7 @@ class StudentSearchApp(QWidget):
     def add_all_records(self):
         student_records = generate_student_records()
         for record in student_records:
-            lname, fname, subject, point = record.split()
+            lname, fname, subject, point = record
             c.execute("INSERT INTO students (lname, fname, subject, point) VALUES (?, ?, ?, ?)",
                       (lname, fname, subject, point))
         conn.commit()
@@ -135,8 +142,8 @@ class StudentSearchApp(QWidget):
     def search_student(self):
         lname = self.name_input.text()
         fname = self.surname_input.text()
-        
-        c.execute("SELECT * FROM students WHERE lname=? AND fname=?", (lname, fname))
+        subject = self.subject_input.text()
+        c.execute("SELECT * FROM students WHERE lname=? OR fname=? OR subject=?", (lname, fname,subject))
         result = c.fetchone()
         
         if result:

@@ -1,0 +1,140 @@
+import sys
+import random
+import threading
+from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtWidgets import QMessageBox
+from pymongo import MongoClient
+from student_records_ui import Ui_MainWindow  # The generated UI script
+
+# Lists provided
+LNames = ['Abashidze', 'Gigauri', 'Archvadze', 'Akhalaya', 'Badzaghua', 'Berianidze', 'Berishvili', 'Gventsadze', 'Dalakishvili', 'Antidze', 'Gyorgadze', 'Gogaladze', 'Gotsiridze', 'Vardidze', 'Zarandia', 'Tadumadze', 'Labadze', 'Kvaratskhelia', 'Kusradze', 'Kveselava', 'Kapanadze', 'Kasradze', 'Kvinikadze', 'Kopadze', 'Kankia', 'Kordzaia', 'Mikava', 'Melia', 'Monyava', 'Niauri', 'Latsabidze', 'Mikadze', 'Nemsitsveridze', 'Maisuradze', 'Matsaberidze', 'Tsavania', 'Machaladze', 'Odisharia', 'Metreveli', 'Nefaridze', 'Modebadze', 'Marjanidze', 'Mumladze', 'Nasrashvili', 'Djanjghava', 'Mosia', 'Nozadze', 'Nutsubidze', 'Oniani', 'Okruashvili', 'Pertia', 'Razmadze', 'Revazashvili', 'Saganelidze', 'Jakhaia', 'Salukvadze', 'Samsonashvili', 'Samkharadze', 'Saralidze', 'Sartania', 'Sarishvili', 'Simonishvili', 'Skhiladze', 'Khurtsidze', 'Sikharulidze', 'Tabatadze', 'Fatsatsia', 'Filauri', 'Fukhashvili', 'Kobalia', 'Kipshidze', 'Shainidze', 'Fifia', 'Shengelia', 'Sherozia', 'Shvelidze', 'Chkheidze', 'Chaduneli', 'Chikvashvili', 'Tskitishvili', 'Chokoraya', 'Tsaguria', 'Tsertsvadze', 'Tsukhishvili', 'Dzindzibadze', 'Tsereteli', 'Tsiklauri', 'Chavchanidze', 'Chiradze', 'Chelidze', 'Chanturia', 'Siradze', 'Shonia', 'Khanjaladze', 'Kharazishvili', 'Kheladze', 'Khvingia', 'Khutishvili', 'Janelidze', 'Jokhadze']
+FNames = ['Anna', 'Anuki', 'Barbare', 'Gvantsa', 'Diana', 'Eka', 'Elene', 'Veronika', 'Viktoria', 'Tatia', 'Lamzira', 'Tea', 'Tekle', 'Tiniko', 'Tamari', 'Isabella', 'Ia', 'Yamze', 'Lia', 'Lika', 'Lana', 'Marika', 'Manana', 'Maya', 'Maka', 'Mariam', 'Nana', 'Nani', 'Nata', 'Nato', 'Nino', 'Nona', 'Oliko', 'Ketevani', 'Salome', 'Sofiko', 'Nia', 'Christine', 'Shorena', 'Khatia', 'Aleko', 'Alika', 'Amiran', 'Andria', 'Archil', 'Aslan', 'Bachuk', 'Beka', 'Giga', 'Gyorgi', 'David', 'Gigi', 'Goga', 'Data', 'Erekle', 'Temur', 'Yakob', 'Ilia', 'Irakli', 'Lado', 'Lasha', 'Mikhail', 'Nika', 'Otari', 'Paata', 'Ramaz', 'Ramini', 'Rati', 'Rauli', 'Revazi', 'Roma', 'Romani', 'Sandro', 'Saba', 'Sergi', 'Simon', 'Shalva', 'Shota', 'Tsotne', 'Jaba']
+Subject = ['Basics of Programming', 'Calculus II', 'Introduction to Physics', 'Computer Skills', 'Introduction to Chemistry', 'Introduction to Biology', 'Algorithms I', 'Introduction to Electronics', 'Data Structures', 'Algorithms II']
+Point = [str(i) for i in range(101)]
+
+ch = random.choice
+
+# Predefined IDs
+predefined_ids = [str(i) for i in range(10)]
+
+# Generate student records with IDs
+Stud_recs = [f"{predefined_ids[i]},{ch(LNames)},{ch(FNames)},{ch(Subject)},{ch(Point)}" for i in range(10)]
+
+# MongoDB setup
+client = MongoClient('mongodb://localhost:27017/')
+db = client['student_db']
+collection = db['students']
+
+class MyApp(QtWidgets.QMainWindow, Ui_MainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+        self.AddRecords.clicked.connect(self.add_records)
+        self.Search.clicked.connect(self.search_record)
+        self.Update.clicked.connect(self.update_record)
+
+        self.Remove.clicked.connect(self.show_no_functionality_message)
+        self.Close.clicked.connect(self.close)
+
+        self.threadpool = QtCore.QThreadPool()
+
+    def show_no_functionality_message(self):
+        sender_button = self.sender()
+        if sender_button == self.Remove:
+            message = "No current functionality as sir's task says."
+        elif sender_button == self.Close:
+            message = "No current functionality for this as well"
+        QMessageBox.information(self, "Womp Womp Error", message)
+
+    def add_records(self):
+        worker = Worker(self._add_records)
+        worker.signals.result.connect(lambda result: self.show_message("Success", "All records added to the database."))
+        self.threadpool.start(worker)
+
+    def _add_records(self):
+        for record in Stud_recs:
+            ident, last_name, name, subject, grade = record.split(',')
+            collection.insert_one({
+                '_id': ident,
+                'Last Name': last_name,
+                'Name': name,
+                'Subject': subject,
+                'Grade': grade
+            })
+
+    def search_record(self):
+        worker = Worker(self._search_record)
+        worker.signals.result.connect(self.display_search_results)
+        self.threadpool.start(worker)
+
+    def _search_record(self):
+        query = {}
+        if self.lineEdit_5.text():
+            query['_id'] = self.lineEdit_5.text()
+        if self.lineEdit_4.text():
+            query['Last Name'] = self.lineEdit_4.text()
+        if self.lineEdit.text():
+            query['Name'] = self.lineEdit.text()
+        if self.lineEdit_2.text():
+            query['Subject'] = self.lineEdit_2.text()
+        if self.lineEdit_3.text():
+            query['Grade'] = self.lineEdit_3.text()
+        results = collection.find(query)
+        return list(results)
+
+    def display_search_results(self, results):
+        if results:
+            result_strings = [f"ID: {result['_id']}, Last Name: {result['Last Name']}, Name: {result['Name']}, Subject: {result['Subject']}, Grade: {result['Grade']}" for result in results]
+            result_message = "\n".join(result_strings)
+            self.show_message("Search Results", result_message)
+        else:
+            self.show_message("Search Results", "No records found.")
+
+    def update_record(self):
+        worker = Worker(self._update_record)
+        worker.signals.result.connect(lambda result: self.show_message("Success", "Record updated.") if result else self.show_message("Error", "ID field is required to update a record."))
+        self.threadpool.start(worker)
+
+    def _update_record(self):
+        ident = self.lineEdit_5.text().strip()
+        if ident:
+            updates = {}
+            if self.lineEdit_4.text():
+                updates['Last Name'] = self.lineEdit_4.text()
+            if self.lineEdit.text():
+                updates['Name'] = self.lineEdit.text()
+            if self.lineEdit_2.text():
+                updates['Subject'] = self.lineEdit_2.text()
+            if self.lineEdit_3.text():
+                updates['Grade'] = self.lineEdit_3.text()
+            collection.update_one({'_id': ident}, {'$set': updates})
+            return True
+        else:
+            return False
+        
+
+    def show_message(self, title, message):
+        QMessageBox.information(self, title, message)
+
+class Worker(QtCore.QRunnable):
+    def __init__(self, fn, *args, **kwargs):
+        super(Worker, self).__init__()
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()
+
+    @QtCore.pyqtSlot()
+    def run(self):
+        result = self.fn(*self.args, **self.kwargs)
+        self.signals.result.emit(result)
+
+class WorkerSignals(QtCore.QObject):
+    result = QtCore.pyqtSignal(object)
+
+if __name__ == '__main__':
+    app = QtWidgets.QApplication(sys.argv)
+    window = MyApp()
+    window.show()
+    sys.exit(app.exec_())

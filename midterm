@@ -1,0 +1,104 @@
+import random as rd
+import pymongo
+
+
+Digit_list = [[rd.randint(1, 200), rd.randint(1, 200), rd.randint(1, 200)] for i in range(10)]
+
+class Triangle:
+    def __init__(self, base_and_height):
+        self.base = base_and_height[0]
+        self.height = base_and_height[1]
+    def __str__(self):
+        return "Triangle base: " + str(self.base)+ "Triangle height: "+ str(self.height)
+    def area(self):
+        return 0.5 * self.base * self.height
+    
+    def __le__(self, other):
+        return self.area() <= other.area()
+    def __eq__(self, other):
+        return self.area() == other.area()
+    def __ge__(self, other):
+        return self.area() >= other.area()
+    
+    def __add__(self, other):
+        return Triangle([self.area + other.area()])
+    def __mul__(self, other):
+        return Triangle([self.area * other.area()])
+    def __sub__(self, other):
+        return Triangle([self.area - other.area()])
+    def __truediv__(self, other):
+        return Triangle([self.area / other.area()])
+    
+    @property
+    def attributes(self):
+        return 'Figure base: {} Figure height: {}'.format(self.base, self.height)
+
+    @attributes.setter
+    def attributes(self, base_and_height):
+        base, height = base_and_height.split(' ')
+        self.base = int(base)
+        self.height = int(height)
+    
+    @attributes.deleter
+    def attributes(self):
+        print('Delete Name!')
+        self.base = None
+        self.height = None
+    
+
+class Square(Triangle):
+    def __init__(self, base_and_height):
+        super().__init__(base_and_height)
+        self.height=self.base
+    def __str__(self):
+        return str(self.base)
+    def area(self):
+       return self.base**2
+
+
+triangle1 = Triangle(Digit_list[0])
+triangle2 = Triangle(Digit_list[0])
+triangle3 = Triangle(Digit_list[1])
+square1 = Square(Digit_list[0])
+square2 = Square(Digit_list[2])
+triangle2.attributes = "17 25"
+
+print(triangle1.attributes)
+print(triangle1.area())
+
+print (triangle2.attributes)
+print(triangle2.area())
+
+print(triangle3.attributes)
+print(triangle3.area())
+
+print(square1.attributes)
+print(square1.area())
+
+print(square2.attributes)
+print(square2.area())
+
+myclient = pymongo.MongoClient("mongodb://localhost:27017/")
+mydb = myclient["Ani"]
+
+mycol = mydb["Figures"]
+
+mydict = { "Figure type": "Triangle", "Base": triangle1.base, "Height": triangle1.height}
+x = mycol.insert_one(mydict)
+
+mydict = { "Figure type": "Triangle", "Base": triangle2.base, "Height": triangle2.height}
+x = mycol.insert_one(mydict)
+
+mydict = { "Figure type": "Triangle", "Base": triangle3.base, "Height": triangle3.height}
+x = mycol.insert_one(mydict)
+
+mydict = { "Figure type": "Square", "Base": square1.base, "Height": square1.height}
+x = mycol.insert_one(mydict)
+
+mydict = { "Figure type": "Square", "Base": square2.base, "Height": square2.height}
+x = mycol.insert_one(mydict)
+
+mydoc = mycol.find().sort("Height")
+
+for x in mycol.find():
+  print(x)
